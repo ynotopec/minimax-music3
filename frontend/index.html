@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MiniMax-Music3 — AI Music Studio</title>
+<style>
+:root {
+  --bg: #0f0f13;
+  --surface: #18181f;
+  --surface2: #22222e;
+  --border: #2a2a3a;
+  --text: #e4e4ed;
+  --text-dim: #8888a0;
+  --accent: #7c6aef;
+  --accent-glow: rgba(124, 106, 239, 0.25);
+  --accent2: #5b9ef0;
+  --success: #4ade80;
+  --error: #f87171;
+  --warn: #fbbf24;
+  --radius: 12px;
+  --radius-sm: 8px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+/* ── Header ── */
+.header {
+  text-align: center;
+  padding: 3rem 1.5rem 2rem;
+  background: linear-gradient(180deg, rgba(124, 106, 239, 0.08) 0%, transparent 100%);
+  border-bottom: 1px solid var(--border);
+}
+.header h1 {
+  font-size: 2.25rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.02em;
+}
+.header p {
+  color: var(--text-dim);
+  margin-top: 0.5rem;
+  font-size: 1.05rem;
+}
+
+/* ── Layout ── */
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+/* ── Tabs ── */
+.tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid var(--border);
+}
+.tab-btn {
+  padding: 0.75rem 1.5rem;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.2s;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active {
+  color: var(--accent);
+}
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent);
+}
+
+/* ── Panels ── */
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* ── Cards ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+.card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.card-title .icon { font-size: 1.2rem; }
+
+/* ── Forms ── */
+label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-dim);
+  margin-bottom: 0.4rem;
+}
+textarea, input[type="text"], input[type="number"], select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 0.95rem;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+textarea:focus, input:focus, select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+textarea { resize: vertical; min-height: 120px; line-height: 1.7; }
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* ── Checkbox ── */
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1.5rem;
+  cursor: pointer;
+}
+.checkbox-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* ── Buttons ── */
+.btn {
+  padding: 0.75rem 2rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: white;
+  box-shadow: 0 4px 20px var(--accent-glow);
+}
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 28px rgba(124, 106, 239, 0.35);
+}
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+.btn-secondary {
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.btn-secondary:hover { background: var(--border); }
+
+.btn-row { display: flex; gap: 0.75rem; }
+
+/* ── Status ── */
+.status {
+  display: none;
+  padding: 1rem;
+  border-radius: var(--radius-sm);
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  align-items: center;
+  gap: 0.5rem;
+}
+.status.show { display: flex; }
+.status.loading {
+  background: rgba(124, 106, 239, 0.1);
+  border: 1px solid rgba(124, 106, 239, 0.3);
+  color: var(--accent);
+}
+.status.error {
+  background: rgba(248, 113, 113, 0.1);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  color: var(--error);
+}
+.status.success {
+  background: rgba(74, 222, 128, 0.1);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  color: var(--success);
+}
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Player ── */
+.player-card {
+  background: linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2rem;
+  margin-top: 1.5rem;
+  display: none;
+}
+.player-card.show { display: block; }
+
+.player-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+.player-id {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.visualizer {
+  height: 60px;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  padding: 0 0.5rem;
+  overflow: hidden;
+}
+.vis-bar {
+  flex: 1;
+  background: linear-gradient(to top, var(--accent), var(--accent2));
+  border-radius: 2px 2px 0 0;
+  animation: vis 1.2s ease-in-out infinite alternate;
+  min-height: 4px;
+}
+@keyframes vis {
+  from { opacity: 0.3; transform: scaleY(0.5); }
+  to { opacity: 1; transform: scaleY(1); }
+}
+
+audio {
+  width: 100%;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  outline: none;
+}
+
+.player-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+/* ── History ── */
+.history-list { list-style: none; }
+.history-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.history-item:last-child { border-bottom: none; }
+.history-play {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1rem;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+.history-play:hover {
+  background: var(--accent);
+  color: white;
+}
+.history-info { flex: 1; min-width: 0; }
+.history-id {
+  font-size: 0.85rem;
+  font-weight: 500;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+.history-meta {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+.history-size {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+/* ── Lyrics Display ── */
+.lyrics-display {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1.25rem;
+  font-family: 'Georgia', serif;
+  font-size: 0.95rem;
+  line-height: 2;
+  white-space: pre-wrap;
+  margin-top: 1rem;
+  display: none;
+}
+.lyrics-display.show { display: block; }
+.lyrics-section {
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .form-row { grid-template-columns: 1fr; }
+  .header h1 { font-size: 1.75rem; }
+  .container { padding: 1rem; }
+}
+
+/* ── Helper ── */
+.mt-1 { margin-top: 1rem; }
+.mt-2 { margin-top: 1.5rem; }
+.text-dim { color: var(--text-dim); }
+.text-sm { font-size: 0.85rem; }
+.mono { font-family: 'SF Mono', 'Fira Code', monospace; }
+</style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<div class="header">
+  <h1>🎵 MiniMax-Music3 Studio</h1>
+  <p>AI Music Generation — Lyrics, Style, Full Songs</p>
+</div>
+
+<div class="container">
+
+  <!-- ── Tabs ── -->
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="create">✦ Create</button>
+    <button class="tab-btn" data-tab="lyrics">📝 Lyrics</button>
+    <button class="tab-btn" data-tab="history">🕒 History</button>
+  </div>
+
+  <!-- ════ CREATE PANEL ════ -->
+  <div class="panel active" id="panel-create">
+
+    <!-- Prompt Card -->
+    <div class="card">
+      <div class="card-title">
+        <span class="icon">🎼</span> Music Description
+      </div>
+      <label for="prompt">Genre, BPM, instruments, vocal style, mood</label>
+      <textarea id="prompt" rows="3"
+        placeholder="A warm acoustic pop song with intimate female vocals, fingerpicked guitar, soft piano, and a gradual emotional build into a wide final chorus. BPM: 96, Key: C major.">Genre, mood, instruments, vocal style, scene</textarea>
+
+      <label for="lyrics" class="mt-1">🎤 Lyrics (optional)</label>
+      <textarea id="lyrics" rows="8"
+        placeholder="[Verse]
+Morning light filtering through the pine
+Every quiet street is yours and mine
+[Chorus]
+Softly the world begins to breathe
+[Outro]
+...">[Verse]
+Your lyrics here...
+
+[Chorus]
+The chorus...
+
+[Outro]
+...</textarea>
+    </div>
+
+    <!-- Options Card -->
+    <div class="card">
+      <div class="card-title">
+        <span class="icon">⚙️</span> Settings
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label for="seed">Seed</label>
+          <input type="number" id="seed" value="7" min="0">
+        </div>
+        <div>
+          <label for="max-tokens">Duration (frames)</label>
+          <input type="number" id="max-tokens" value="750" min="100" max="9000">
+          <span class="text-sm text-dim mt-1">Max ~360s (9 min) at 25 fps</span>
+        </div>
+      </div>
+
+      <label class="checkbox-row">
+        <input type="checkbox" id="instrument">
+        <span>Instrumental (no vocals)</span>
+      </label>
+    </div>
+
+    <!-- Generate Button -->
+    <button class="btn btn-primary" id="btn-generate">
+      <span>▶</span> Generate Music
+    </button>
+
+    <!-- Status -->
+    <div class="status" id="status">
+      <div class="spinner"></div>
+      <span id="status-text">Generating...</span>
+    </div>
+
+    <!-- Player -->
+    <div class="player-card" id="player-card">
+      <div class="player-header">
+        <div>
+          <div class="card-title" style="margin-bottom:0.25rem">
+            <span>🎧</span> Your Generation
+          </div>
+          <div class="player-id" id="player-id"></div>
+        </div>
+        <button class="btn btn-secondary" id="btn-download" style="padding:0.5rem 1rem;font-size:0.85rem">
+          ⬇ Download
+        </button>
+      </div>
+
+      <div class="visualizer" id="visualizer"></div>
+
+      <audio id="audio-player" controls>
+        Your browser does not support the audio element.
+      </audio>
+
+      <div class="player-meta">
+        <span id="player-lyrics-preview"></span>
+        <span id="player-duration"></span>
+      </div>
+    </div>
+
+    <!-- Lyrics Display -->
+    <div class="lyrics-display" id="lyrics-display"></div>
+  </div>
+
+  <!-- ════ LYRICS PANEL ════ -->
+  <div class="panel" id="panel-lyrics">
+    <div class="card">
+      <div class="card-title">
+        <span class="icon">📝</span> Generate Lyrics
+      </div>
+      <label for="lyrics-prompt">Describe the song you want lyrics for</label>
+      <textarea id="lyrics-prompt" rows="3"
+        placeholder="A nostalgic folk song about summer evenings by the lake...">A nostalgic folk song about summer evenings by the lake...</textarea>
+      <div class="mt-2">
+        <button class="btn btn-primary" id="btn-generate-lyrics">
+          <span>✦</span> Generate Lyrics
+        </button>
+      </div>
+      <div class="status" id="status-lyrics">
+        <div class="spinner"></div>
+        <span id="status-lyrics-text">Generating...</span>
+      </div>
+      <div class="lyrics-display" id="lyrics-output"></div>
+    </div>
+  </div>
+
+  <!-- ════ HISTORY PANEL ════ -->
+  <div class="panel" id="panel-history">
+    <div class="card">
+      <div class="card-title">
+        <span class="icon">🕒</span> Recent Generations
+      </div>
+      <ul class="history-list" id="history-list">
+        <li class="text-dim" style="padding:1rem;text-align:center;">Loading...</li>
+      </ul>
+      <div class="mt-2">
+        <button class="btn btn-secondary" id="btn-refresh">🔄 Refresh</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── DOM refs ──
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => document.querySelectorAll(s);
+
+// ── Tabs ──
+$$('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    $$('.tab-btn').forEach(b => b.classList.remove('active'));
+    $$('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    $('#panel-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ── Visualizer bars ──
+(function initVisualizer() {
+  const viz = $('#visualizer');
+  for (let i = 0; i < 40; i++) {
+    const bar = document.createElement('div');
+    bar.className = 'vis-bar';
+    bar.style.animationDelay = (Math.random() * 1.2) + 's';
+    bar.style.height = (20 + Math.random() * 60) + '%';
+    viz.appendChild(bar);
+  }
+})();
+
+// ── Show/Hide status ──
+function showStatus(type, text) {
+  const el = $('#status');
+  el.className = 'status show status-' + type;
+  $('#status-text').textContent = text;
+}
+function hideStatus() {
+  $('#status').className = 'status';
+}
+
+function showLyricsStatus(type, text) {
+  const el = $('#status-lyrics');
+  el.className = 'status show status-' + type;
+  $('#status-lyrics-text').textContent = text;
+}
+function hideLyricsStatus() {
+  $('#status-lyrics').className = 'status';
+}
+
+// ── Generate music ──
+$('#btn-generate').addEventListener('click', async () => {
+  const lyrics = $('#instrument').checked ? '' : $('#lyrics').value.trim();
+  const prompt = $('#prompt').value.trim();
+
+  if (!prompt && !lyrics) {
+    alert('Please enter a music prompt or lyrics.');
+    return;
+  }
+
+  const btn = $('#btn-generate');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Generating...';
+  showStatus('loading', 'Generating music — this may take a minute...');
+  $('#player-card').classList.remove('show');
+  $('#lyrics-display').classList.remove('show');
+
+  try {
+    const body = {
+      prompt: prompt,
+      lyrics: lyrics,
+      seed: parseInt($('#seed').value),
+      max_new_tokens: parseInt($('#max-tokens').value),
+      instrument: $('#instrument').checked,
+      stream: false,
+    };
+
+    const resp = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({ detail: resp.statusText }));
+      throw new Error(err.detail || 'Generation failed');
+    }
+
+    const data = await resp.json();
+
+    // Show player
+    $('#player-id').textContent = data.generation_id;
+    $('#player-duration').textContent = '~' + Math.round(data.duration_seconds) + 's';
+    $('#audio-player').src = data.audio_url;
+
+    if (data.lyrics) {
+      $('#player-lyrics-preview').textContent = '🎤 Lyrics available';
+      showLyrics(data.lyrics);
+    } else {
+      $('#player-lyrics-preview').textContent = 'Instrumental';
+      $('#lyrics-display').classList.remove('show');
+    }
+
+    $('#btn-download').onclick = () => {
+      window.open(data.audio_url, '_blank');
+    };
+
+    $('#player-card').classList.add('show');
+    showStatus('success', '✅ Generation complete!');
+
+    // Refresh history if visible
+    if ($('#panel-history').classList.contains('active')) {
+      loadHistory();
+    }
+
+  } catch (e) {
+    showStatus('error', '❌ ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<span>▶</span> Generate Music';
+  }
+});
+
+// ── Generate lyrics ──
+$('#btn-generate-lyrics').addEventListener('click', async () => {
+  const prompt = $('#lyrics-prompt').value.trim();
+  if (!prompt) { alert('Enter a prompt for lyrics.'); return; }
+
+  const btn = $('#btn-generate-lyrics');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Generating...';
+  showLyricsStatus('loading', 'Generating lyrics...');
+  $('#lyrics-output').classList.remove('show');
+
+  try {
+    const resp = await fetch('/api/lyrics', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt }),
+    });
+    if (!resp.ok) throw new Error('Failed to generate lyrics');
+    const data = await resp.json();
+    showLyrics(data.lyrics);
+    showLyricsStatus('success', '✅ Lyrics generated!');
+  } catch (e) {
+    showLyricsStatus('error', '❌ ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<span>✦</span> Generate Lyrics';
+  }
+});
+
+function showLyrics(text) {
+  const el = $('#lyrics-display');
+  el.innerHTML = text.replace(/\[(\w+)\]/g, '<span class="lyrics-section">[$1]</span>');
+  el.classList.add('show');
+}
+
+// ── History ──
+async function loadHistory() {
+  const list = $('#history-list');
+  try {
+    const resp = await fetch('/api/history');
+    const data = await resp.json();
+    if (data.generations.length === 0) {
+      list.innerHTML = '<li class="text-dim" style="padding:1rem;text-align:center;">No generations yet.</li>';
+      return;
+    }
+    list.innerHTML = data.generations.map(g => `
+      <li class="history-item">
+        <button class="history-play" data-url="${g.url}">▶</button>
+        <div class="history-info">
+          <div class="history-id">${g.id}</div>
+          <div class="history-meta">Created ${new Date(g.created * 1000).toLocaleString('fr-FR')}</div>
+        </div>
+        <div class="history-size">${g.size_mb} MB</div>
+      </li>
+    `).join('');
+
+    // Attach play listeners
+    list.querySelectorAll('.history-play').forEach(btn => {
+      btn.addEventListener('click', () => {
+        // Navigate to create tab and load player
+        $$('.tab-btn').forEach(b => b.classList.remove('active'));
+        $$('.panel').forEach(p => p.classList.remove('active'));
+        $$('.tab-btn')[0].classList.add('active');
+        $('#panel-create').classList.add('active');
+
+        $('#player-card').classList.add('show');
+        $('#player-id').textContent = 'From History';
+        $('#audio-player').src = btn.dataset.url;
+        $('#player-duration').textContent = btn.closest('.history-item').querySelector('.history-size').textContent;
+        showStatus('success', '✅ Playing: ' + btn.closest('.history-item').querySelector('.history-id').textContent);
+      });
+    });
+  } catch (e) {
+    list.innerHTML = '<li class="text-dim" style="padding:1rem;text-align:center;">Failed to load history.</li>';
+  }
+}
+
+$('#btn-refresh').addEventListener('click', loadHistory);
+
+// ── Init history ──
+loadHistory();
+</script>
+</body>
+</html>
